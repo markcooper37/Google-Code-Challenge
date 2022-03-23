@@ -3,6 +3,7 @@
 from numpy import true_divide
 from .video_library import VideoLibrary
 import random
+from .video_playlist import Playlist
 
 
 class VideoPlayer:
@@ -12,6 +13,7 @@ class VideoPlayer:
         self._video_library = VideoLibrary()
         self._current_video = None
         self._paused = False
+        self._playlists = {}
 
     def number_of_videos(self):
         num_videos = len(self._video_library.get_all_videos())
@@ -113,7 +115,12 @@ class VideoPlayer:
         Args:
             playlist_name: The playlist name.
         """
-        print("create_playlist needs implementation")
+
+        if self._playlists.get(playlist_name.lower()) != None:
+            print("Cannot create playlist: A playlist with the same name already exists")
+        else:
+            self._playlists[playlist_name.lower()] = Playlist(playlist_name)
+            print(f"Successfully created new playlist: {playlist_name}")
 
     def add_to_playlist(self, playlist_name, video_id):
         """Adds a video to a playlist with a given name.
@@ -122,12 +129,26 @@ class VideoPlayer:
             playlist_name: The playlist name.
             video_id: The video_id to be added.
         """
-        print("add_to_playlist needs implementation")
+
+        if self._playlists.get(playlist_name.lower()) == None:
+            print(f"Cannot add video to {playlist_name}: Playlist does not exist")
+        elif self._video_library.get_video(video_id) == None:
+            print(f"Cannot add video to {playlist_name}: Video does not exist")
+        elif self._playlists.get(playlist_name.lower())._videos.get(video_id) != None:
+            print(f"Cannot add video to {playlist_name}: Video already added")
+        else:
+            self._playlists.get(playlist_name.lower())._videos[video_id] = True
+            print(f"Added video to {playlist_name}: {self._video_library.get_video(video_id).title}")
 
     def show_all_playlists(self):
         """Display all playlists."""
 
-        print("show_all_playlists needs implementation")
+        if len(self._playlists) == 0:
+            print("No playlists exist yet")
+        else:
+            print("Showing all playlists:")
+            for key in sorted(self._playlists):
+                print(f"  {self._playlists[key]._name}")
 
     def show_playlist(self, playlist_name):
         """Display all videos in a playlist with a given name.
