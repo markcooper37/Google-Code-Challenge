@@ -229,7 +229,28 @@ class VideoPlayer:
         Args:
             search_term: The query to be used in search.
         """
-        print("search_videos needs implementation")
+
+        video_list = self._video_library.get_all_videos()
+        correct_videos = []
+        for video in video_list:
+            if search_term.lower() in video.title.lower():
+               correct_videos.append(video)
+        if len(correct_videos) == 0:
+            print(f"No search results for {search_term}")
+            return
+        sorted(correct_videos, key=lambda x: x.title)
+        print(f"Here are the results for {search_term}:")
+        for index, video in enumerate(correct_videos):
+            print(f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+        print("Would you like to play any of the above? If yes, specify the number of the video.")
+        print("If your answer is not a valid number, we will assume it's a no.")
+        try:
+            user_input = int(input(""))
+        except ValueError:
+            return
+        else:
+            if user_input >= 1 and user_input <= len(correct_videos):
+                self.play_video(correct_videos[user_input-1].video_id)
 
     def search_videos_tag(self, video_tag):
         """Display all videos whose tags contains the provided tag.
@@ -237,7 +258,30 @@ class VideoPlayer:
         Args:
             video_tag: The video tag to be used in search.
         """
-        print("search_videos_tag needs implementation")
+
+        video_list = self._video_library.get_all_videos()
+        correct_videos = []
+        for video in video_list:
+            for tag in video.tags:
+                if video_tag.lower() == tag.lower():
+                    correct_videos.append(video)
+                    break
+        if len(correct_videos) == 0:
+            print(f"No search results for {video_tag}")
+            return
+        sorted(correct_videos, key=lambda x: x.title)
+        print(f"Here are the results for {video_tag}:")
+        for index, video in enumerate(correct_videos):
+            print(f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+        print("Would you like to play any of the above? If yes, specify the number of the video.")
+        print("If your answer is not a valid number, we will assume it's a no.")
+        try:
+            user_input = int(input(""))
+        except ValueError:
+            return
+        else:
+            if user_input >= 1 and user_input <= len(correct_videos):
+                self.play_video(correct_videos[user_input-1].video_id)
 
     def flag_video(self, video_id, flag_reason=""):
         """Mark a video as flagged.
