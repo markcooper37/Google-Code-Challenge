@@ -32,8 +32,11 @@ class VideoPlayer:
         for sorted_title in sorted_titles:
             for video in video_list:
                 if sorted_title == video.title:
-                    print(
-                        f"{video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+                    if self._flagged.get(video.video_id) != None:
+                        print(f"{video.title} ({video.video_id}) [{' '.join(video.tags)}] - FLAGGED (reason: {self._flagged[video.video_id]})")
+                    else:
+                        print(
+                            f"{video.title} ({video.video_id}) [{' '.join(video.tags)}]")
 
     def play_video(self, video_id):
         """Plays the respective video.
@@ -46,17 +49,17 @@ class VideoPlayer:
 
         if not video:
             print("Cannot play video: Video does not exist")
-            return
-
-        if self._current_video != None:
+        elif self._flagged.get(video_id) != None:
+            print(
+                f"Cannot play video: Video is currently flagged (reason: {self._flagged[video_id]})")
+        elif self._current_video != None:
             print(f"Stopping video: {self._current_video.title}")
             print(f"Playing video: {video.title}")
             self._current_video = video
             self._paused = False
-            return
-
-        print(f"Playing video: {video.title}")
-        self._current_video = video
+        else:
+            print(f"Playing video: {video.title}")
+            self._current_video = video
 
     def stop_video(self):
         """Stops the current video."""
@@ -69,12 +72,12 @@ class VideoPlayer:
 
     def play_random_video(self):
         """Plays a random video from the video library."""
-        if len(self._video_library.get_all_videos()) == 0:
-            print("No videos available")
-            return
 
-        self.play_video(random.choice(
-            self._video_library.get_all_videos()).video_id)
+        for key in self._video_library._videos:
+            if self._flagged.get(key) == None:
+                self.play_video(key)
+                return
+        print("No videos available")
 
     def pause_video(self):
         """Pauses the current video."""
@@ -136,6 +139,9 @@ class VideoPlayer:
                 f"Cannot add video to {playlist_name}: Playlist does not exist")
         elif self._video_library.get_video(video_id) == None:
             print(f"Cannot add video to {playlist_name}: Video does not exist")
+        elif self._flagged.get(video_id) != None:
+            print(
+                f"Cannot add video to {playlist_name}: Video is currently flagged (reason: {self._flagged[video_id]})")
         elif self._playlists.get(playlist_name.lower())._videos.get(video_id) != None:
             print(f"Cannot add video to {playlist_name}: Video already added")
         else:
@@ -170,8 +176,11 @@ class VideoPlayer:
             else:
                 for key in self._playlists[playlist_name.lower()]._videos.keys():
                     video = self._video_library.get_video(key)
-                    print(
-                        f"  {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+                    if self._flagged.get(video.video_id) != None:
+                        print(f"{video.title} ({video.video_id}) [{' '.join(video.tags)}] - FLAGGED (reason: {self._flagged[video.video_id]})")
+                    else:
+                        print(
+                            f"  {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
 
     def remove_from_playlist(self, playlist_name, video_id):
         """Removes a video to a playlist with a given name.
@@ -234,15 +243,16 @@ class VideoPlayer:
         video_list = self._video_library.get_all_videos()
         correct_videos = []
         for video in video_list:
-            if search_term.lower() in video.title.lower():
-               correct_videos.append(video)
+            if search_term.lower() in video.title.lower() and self._flagged.get(video.video_id) == None:
+                correct_videos.append(video)
         if len(correct_videos) == 0:
             print(f"No search results for {search_term}")
             return
         sorted(correct_videos, key=lambda x: x.title)
         print(f"Here are the results for {search_term}:")
         for index, video in enumerate(correct_videos):
-            print(f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+            print(
+                f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
         print("Would you like to play any of the above? If yes, specify the number of the video.")
         print("If your answer is not a valid number, we will assume it's a no.")
         try:
@@ -263,6 +273,8 @@ class VideoPlayer:
         video_list = self._video_library.get_all_videos()
         correct_videos = []
         for video in video_list:
+            if self._flagged.get(video.video_id) != None:
+                continue
             for tag in video.tags:
                 if video_tag.lower() == tag.lower():
                     correct_videos.append(video)
@@ -273,7 +285,8 @@ class VideoPlayer:
         sorted(correct_videos, key=lambda x: x.title)
         print(f"Here are the results for {video_tag}:")
         for index, video in enumerate(correct_videos):
-            print(f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
+            print(
+                f"  {index+1}) {video.title} ({video.video_id}) [{' '.join(video.tags)}]")
         print("Would you like to play any of the above? If yes, specify the number of the video.")
         print("If your answer is not a valid number, we will assume it's a no.")
         try:
@@ -297,10 +310,13 @@ class VideoPlayer:
         elif self._video_library.get_video(video_id) == None:
             print("Cannot flag video: Video does not exist")
         else:
+            if self._current_video == self._video_library.get_video(video_id):
+                self.stop_video()
             if flag_reason == "":
                 flag_reason = "Not supplied"
             self._flagged[video_id] = flag_reason
-            print(f"Successfully flagged video: {self._video_library.get_video(video_id).title} (reason: {flag_reason})")
+            print(
+                f"Successfully flagged video: {self._video_library.get_video(video_id).title} (reason: {flag_reason})")
 
     def allow_video(self, video_id):
         """Removes a flag from a video.
@@ -315,4 +331,5 @@ class VideoPlayer:
             print("Cannot remove flag from video: Video is not flagged")
         else:
             self._flagged.pop(video_id)
-            print(f"Successfully removed flag from video: {self._video_library.get_video(video_id).title}")
+            print(
+                f"Successfully removed flag from video: {self._video_library.get_video(video_id).title}")
